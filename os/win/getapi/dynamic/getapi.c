@@ -27,21 +27,24 @@
   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-#include "getapi.h"
+#include "peb.h"
   
+LPVOID get_api(DWORD);
+LPVOID get_apix(DWORD);
+
 // converts string to lowercase
 uint32_t crc32c(const char *s) {
-  int      i;
-  uint32_t crc=0;
-  
-  while (*s) {
-    crc ^= (uint8_t)(*s++ | 0x20);
+    int      i;
+    uint32_t crc=0;
     
-    for (i=0; i<8; i++) {
-      crc = (crc >> 1) ^ (0x82F63B78 * (crc & 1));
+    while (*s) {
+      crc ^= (uint8_t)(*s++ | 0x20);
+      
+      for (i=0; i<8; i++) {
+        crc = (crc >> 1) ^ (0x82F63B78 * (crc & 1));
+      }
     }
-  }
-  return crc;
+    return crc;
 }
 
 #ifndef ASM
@@ -159,12 +162,7 @@ LPVOID get_api (DWORD dwHash) {
   PLDR_DATA_TABLE_ENTRY dte;
   LPVOID                api_adr=NULL;
   
-#if defined(_WIN64)
-  peb = (PPEB) __readgsqword(0x60);
-#else
-  peb = (PPEB) __readfsdword(0x30);
-#endif
-
+  peb  = NtCurrentTeb()->ProcessEnvironmentBlock;
   ldr = (PPEB_LDR_DATA)peb->Ldr;
   
   // for each DLL loaded
@@ -197,7 +195,7 @@ int main(int argc, char *argv[])
   
   h = dll_h + api_h;
   
-  p = get_api(h);
+  p = get_apix(h);
   // if not found
   if (p==NULL) {
     // load the module into memory
@@ -206,7 +204,7 @@ int main(int argc, char *argv[])
       return 0;
     }
     // then try again
-    p = get_api(h);
+    p = get_apix(h);
   }
   if (p==NULL) {
     printf ("\nUnable to locate API address \"%s\"", argv[2]);

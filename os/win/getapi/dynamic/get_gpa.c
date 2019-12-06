@@ -28,9 +28,13 @@
   POSSIBILITY OF SUCH DAMAGE. */
 
 
-#include "getapi.h"
+#include "peb.h"
 
 typedef BYTE UBYTE;
+
+#ifndef UNW_FLAG_CHAININFO
+#define UNW_FLAG_CHAININFO 4
+#endif
 
 typedef enum _UNWIND_OP_CODES {
     UWOP_PUSH_NONVOL = 0, /* info == register number */
@@ -92,7 +96,7 @@ LPVOID GetGPA(VOID) {
     PBYTE                         s1, e1, s2, e2;
     PUNWIND_INFO                  ui;
     
-    peb = (PPEB) __readgsqword(0x60);
+    peb = NtCurrentTeb()->ProcessEnvironmentBlock;
     ldr = (PPEB_LDR_DATA)peb->Ldr;
     
     for (dte=(PLDR_DATA_TABLE_ENTRY)ldr->InLoadOrderModuleList.Flink;
